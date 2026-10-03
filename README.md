@@ -1,0 +1,79 @@
+# User Management (ASP.NET Core MVC + SQL Server, inline SQL)
+
+A single-screen user manager: list users, add, edit, delete one, and delete many with checkboxes.
+Data access is plain ADO.NET (`Microsoft.Data.SqlClient`) with inline, **parameterized** SQL. No Entity Framework.
+
+## Run it
+
+1. **Prerequisites:** .NET 8 SDK and any SQL Server (LocalDB, Express, Developer, or Docker).
+2. **Create the database:** run `database/CreateDatabase.sql` in SSMS / Azure Data Studio, or:
+   ```
+   sqlcmd -S localhost -E -i database/CreateDatabase.sql
+   ```
+   It creates the `UserManagement` database, the `States` lookup (50 states + DC), the `Users` table and five sample users. It is safe to run again.
+3. **Set the connection string** in `UserManagement/appsettings.json` (`ConnectionStrings:UserManagement`). Examples:
+   - Windows auth: `Server=localhost;Database=UserManagement;Trusted_Connection=True;TrustServerCertificate=True;`
+   - LocalDB: `Server=(localdb)\\MSSQLLocalDB;Database=UserManagement;Trusted_Connection=True;`
+   - SQL login / Docker: `Server=localhost,1433;Database=UserManagement;User Id=sa;Password=...;TrustServerCertificate=True;`
+4. **Start the app:**
+   ```
+   cd UserManagement
+   dotnet run
+   ```
+   Open http://localhost:5180 (or open the folder in Visual Studio and press F5).
+
+## Project layout
+
+```
+database/CreateDatabase.sql        tables, constraints, state seed, sample rows
+UserManagement/
+  Program.cs                       DI + MVC routing (default: Users/Index)
+  Data/SqlConnectionFactory.cs     opens SqlConnection from appsettings
+  Data/UserRepository.cs           all user SQL: select, insert (OUTPUT INSERTED.UserId), update, delete, bulk delete
+  Data/StateRepository.cs          state dropdown + existence check
+  Models/User.cs                   fields, validation attributes, server-side business rules, normalization
+  Controllers/UsersController.cs   Index, Create, Edit (form posts), Delete + DeleteMultiple (AJAX/JSON)
+  Views/Users/Index.cshtml         the grid
+  Views/Users/Form.cshtml          shared Add/Edit form
+  wwwroot/js/site.js               fetch helper (antiforgery header, error handling), flash messages, debounce
+  wwwroot/js/users-list.js         grid behaviour
+  wwwroot/js/user-form.js          form behaviour
+```
+
+## How each requirement is met
+
+| Requirement | Implementation |
+|---|---|
+| List of users | `UsersController.Index` → `UserRepository.GetAllAsync` (`SELECT ... ORDER BY LastName, FirstName`) |
+| Add / Edit | One `Form.cshtml` for both; POST → validate → `INSERT` / `UPDATE`, then redirect with a flash message |
+| Delete user | Row **Delete** button → confirm → `fetch` POST `/Users/Delete/{id}` → row fades out, no page reload |
+| Delete multiple | Checkboxes + **Delete selected (n)** → confirm listing the names → POST `/Users/DeleteMultiple` with `{ ids: [...] }` → one `DELETE ... WHERE UserId IN (@Id0, @Id1, ...)` |
+| Required fields | Enforced three times: JS, DataAnnotations on `User`, and `NOT NULL` in SQL |
+| State dropdown | Loaded from the `States` table; server also checks the code exists (FK in SQL too) |
+| Zip5 / Zip4 | 5 digits required (not `00000`), 4 digits optional; CHECK constraints in SQL |
+
+## JavaScript features (the part being judged)
+
+**Users list (`users-list.js`)**
+- Select-all checkbox with a true **indeterminate** state when only some rows are checked.
+- **Shift+click** selects a range of rows.
+- Live **search** (debounced) across name, phone (formatted or raw digits), address, city, state, zip, DOB. Multiple words are AND-ed. Esc clears.
+- Select-all only affects visible rows, and rows hidden by the search are unchecked, so a bulk delete never removes users you can't see.
+- **Sortable columns** (click or Enter on a header), ascending/descending, dates sorted chronologically, `aria-sort` set.
+- **Delete selected (n)** button shows a live count and is disabled when nothing is selected.
+- AJAX deletes send the antiforgery token in a header; buttons are locked while a request is in flight; rows animate out; counts, empty state and "no matches" state update; a message reports if some users were already deleted by someone else; network and server errors are shown instead of failing silently.
+
+**Add / Edit form (`user-form.js`)**
+- Validation on blur, then live as you type once a field has been touched; on submit every field is checked, an **error summary** lists problems (click to jump), and focus moves to the first invalid field.
+- Rules match the server: names (letters, spaces, `-`, `'`, `.`), max lengths, DOB must be a real date, not in the future and not before 1900, phone must be a valid 10-digit U.S. (NANP) number, zip rules above.
+- **Phone mask**: formats to `(212) 555-0143` as you type, keeps the caret in the right place, accepts pasted `+1 212-555-0143`.
+- **Zip**: digits only; typing the 5th digit jumps to Zip+4; Backspace in an empty Zip+4 jumps back; pasting `12345-6789` fills both boxes.
+- DOB picker capped at today; shows the computed **age**.
+- **Unsaved-changes guard** on Cancel and on leaving the page; **double-submit guard** ("Saving..." and disabled button).
+- Server-side errors (if JS is bypassed) are picked up on load and shown in the same places and summary.
+
+## Security / data notes
+- Every value goes through `SqlParameter` with an explicit type and size; the bulk delete generates only parameter *names*.
+- All POSTs (form and AJAX) use `[ValidateAntiForgeryToken]`.
+- Input is normalized server-side (trim, collapse spaces, phone stored as 10 digits) before validation and storage.
+- The server re-validates everything; the JS is for user experience, not trust.

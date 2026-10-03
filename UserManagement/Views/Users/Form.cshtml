@@ -1,0 +1,93 @@
+@model User
+@{
+    var isEdit = Model.UserId > 0;
+    ViewData["Title"] = isEdit ? "Edit User" : "Add User";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p class="muted">Fields marked <span class="req">*</span> are required. U.S. addresses only.</p>
+
+<div id="formSummary" class="alert alert-error" role="alert" hidden></div>
+
+<form id="userForm" method="post" asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@(isEdit ? Model.UserId.ToString() : null)" novalidate>
+    <input type="hidden" asp-for="UserId" />
+
+    <fieldset>
+        <legend>Personal</legend>
+        <div class="row">
+            <div class="field">
+                <label asp-for="FirstName">First Name <span class="req">*</span></label>
+                <input asp-for="FirstName" maxlength="50" autocomplete="given-name" />
+                <span asp-validation-for="FirstName" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="LastName">Last Name <span class="req">*</span></label>
+                <input asp-for="LastName" maxlength="50" autocomplete="family-name" />
+                <span asp-validation-for="LastName" class="field-error"></span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="field">
+                <label asp-for="DateOfBirth">Date of Birth <span class="req">*</span></label>
+                <input asp-for="DateOfBirth" type="date" min="1900-01-01" autocomplete="bday" />
+                <span id="ageHint" class="hint"></span>
+                <span asp-validation-for="DateOfBirth" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Phone">Phone <span class="req">*</span></label>
+                <input asp-for="Phone" type="tel" inputmode="numeric" placeholder="(555) 555-5555" autocomplete="tel-national"
+                       value="@Model.PhoneFormatted" />
+                <span asp-validation-for="Phone" class="field-error"></span>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>Address</legend>
+        <div class="field wide">
+            <label asp-for="AddressLine1">Address Line 1 <span class="req">*</span></label>
+            <input asp-for="AddressLine1" maxlength="100" autocomplete="address-line1" placeholder="Street address" />
+            <span asp-validation-for="AddressLine1" class="field-error"></span>
+        </div>
+        <div class="field wide">
+            <label asp-for="AddressLine2">Address Line 2</label>
+            <input asp-for="AddressLine2" maxlength="100" autocomplete="address-line2" placeholder="Apt, suite, unit (optional)" />
+            <span asp-validation-for="AddressLine2" class="field-error"></span>
+        </div>
+        <div class="row">
+            <div class="field">
+                <label asp-for="City">City <span class="req">*</span></label>
+                <input asp-for="City" maxlength="50" autocomplete="address-level2" />
+                <span asp-validation-for="City" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="StateCode">State <span class="req">*</span></label>
+                <select asp-for="StateCode" asp-items="ViewBag.States" autocomplete="address-level1">
+                    <option value="">-- Select state --</option>
+                </select>
+                <span asp-validation-for="StateCode" class="field-error"></span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="field zip">
+                <label asp-for="Zip5">Zip <span class="req">*</span></label>
+                <input asp-for="Zip5" inputmode="numeric" maxlength="5" placeholder="12345" autocomplete="postal-code" />
+                <span asp-validation-for="Zip5" class="field-error"></span>
+            </div>
+            <div class="field zip">
+                <label asp-for="Zip4">Zip+4</label>
+                <input asp-for="Zip4" inputmode="numeric" maxlength="4" placeholder="6789" />
+                <span asp-validation-for="Zip4" class="field-error"></span>
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="actions">
+        <button type="submit" id="saveButton" class="btn btn-primary">@(isEdit ? "Save Changes" : "Add User")</button>
+        <a id="cancelLink" class="btn" asp-action="Index">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="~/js/user-form.js" asp-append-version="true"></script>
+}

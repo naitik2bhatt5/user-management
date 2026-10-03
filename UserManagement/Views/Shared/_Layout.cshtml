@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - User Management</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="site-header">
+        <a asp-controller="Users" asp-action="Index">User Management</a>
+    </header>
+    <main class="container">
+        @* Flash messages from TempData; site.js also writes AJAX results here. *@
+        <div id="messages" aria-live="polite">
+            @if (TempData["Message"] is string message)
+            {
+                <div class="alert alert-success" role="status">@message<button type="button" class="alert-close" aria-label="Dismiss">&times;</button></div>
+            }
+            @if (TempData["Error"] is string error)
+            {
+                <div class="alert alert-error" role="alert">@error<button type="button" class="alert-close" aria-label="Dismiss">&times;</button></div>
+            }
+        </div>
+        @RenderBody()
+    </main>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,70 @@
+@model IReadOnlyList<User>
+@{
+    ViewData["Title"] = "Users";
+}
+
+<h1>Users</h1>
+
+<div class="toolbar">
+    <a class="btn btn-primary" asp-action="Create">+ Add User</a>
+    <input type="search" id="userSearch" placeholder="Search name, city, state, phone, zip..." aria-label="Search users" autocomplete="off" />
+    <button type="button" id="deleteSelected" class="btn btn-danger" disabled>
+        Delete selected (<span id="selectedCount">0</span>)
+    </button>
+    <span id="userCount" class="muted"></span>
+</div>
+
+@* Antiforgery token read by users-list.js and sent as a header on AJAX deletes. *@
+<form id="antiforgeryForm">@Html.AntiForgeryToken()</form>
+
+<table id="usersTable" class="grid"
+       data-delete-url="@Url.Action("Delete", "Users")"
+       data-delete-multiple-url="@Url.Action("DeleteMultiple", "Users")">
+    <thead>
+        <tr>
+            <th class="col-select"><input type="checkbox" id="selectAll" aria-label="Select all users" /></th>
+            <th data-sort-type="text" class="sortable" tabindex="0">Name</th>
+            <th data-sort-type="date" class="sortable" tabindex="0">Date of Birth</th>
+            <th data-sort-type="text" class="sortable" tabindex="0">Phone</th>
+            <th data-sort-type="text" class="sortable" tabindex="0">Address</th>
+            <th data-sort-type="text" class="sortable" tabindex="0">City</th>
+            <th data-sort-type="text" class="sortable" tabindex="0">State</th>
+            <th data-sort-type="text" class="sortable" tabindex="0">Zip</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var u in Model)
+        {
+            var address = string.IsNullOrEmpty(u.AddressLine2) ? u.AddressLine1 : $"{u.AddressLine1}, {u.AddressLine2}";
+            var search = string.Join(" ", u.FirstName, u.LastName, u.FullName, u.Phone, u.PhoneFormatted, address, u.City, u.StateCode, u.ZipFormatted,
+                                     u.DateOfBirth?.ToString("MM/dd/yyyy")).ToLowerInvariant();
+            <tr data-id="@u.UserId" data-name="@u.FullName" data-search="@search">
+                <td class="col-select"><input type="checkbox" class="row-select" value="@u.UserId" aria-label="Select @u.FullName" /></td>
+                <td data-sort="@($"{u.LastName}, {u.FirstName}")">@u.LastName, @u.FirstName</td>
+                <td data-sort="@(u.DateOfBirth?.ToString("yyyy-MM-dd"))">@(u.DateOfBirth?.ToString("MM/dd/yyyy"))</td>
+                <td data-sort="@u.Phone" class="nowrap">@u.PhoneFormatted</td>
+                <td>@address</td>
+                <td>@u.City</td>
+                <td>@u.StateCode</td>
+                <td data-sort="@(u.Zip5 + u.Zip4)">@u.ZipFormatted</td>
+                <td class="nowrap">
+                    <a class="btn btn-small" asp-action="Edit" asp-route-id="@u.UserId">Edit</a>
+                    <button type="button" class="btn btn-small btn-danger delete-user">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr id="emptyRow" @(Model.Count > 0 ? "hidden" : "")>
+            <td colspan="9" class="empty">No users yet. <a asp-action="Create">Add the first one.</a></td>
+        </tr>
+        <tr id="noMatchRow" hidden>
+            <td colspan="9" class="empty">No users match your search.</td>
+        </tr>
+    </tfoot>
+</table>
+
+@section Scripts {
+    <script src="~/js/users-list.js" asp-append-version="true"></script>
+}
