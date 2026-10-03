@@ -52,6 +52,13 @@
         });
     }
 
+    const addressFieldset = line1.closest('fieldset');
+    /** Highlights the whole address section while Google is working on it. */
+    function setBusy(on) {
+        addressFieldset.classList.toggle('address-busy', on);
+        addressFieldset.setAttribute('aria-busy', on ? 'true' : 'false');
+    }
+
     function setStatus(kind, text) {
         statusEl.className = 'address-status ' + (kind ? 'status-' + kind : '');
         statusEl.textContent = text || '';
@@ -161,30 +168,46 @@
     async function fetchSuggestions() {
         const query = line1.value.trim();
         if (query.length < 3) {
+            if (inFlight) inFlight.abort();
+            setSearching(false);
             suggestions = [];
             closeList();
             return;
         }
         if (cache.has(query)) {
             suggestions = cache.get(query);
-            render();
+            render(suggestions.length ? '' : 'No matching U.S. addresses yet. Keep typing.');
             return;
         }
 
         if (inFlight) inFlight.abort(); // only the latest keystroke matters
         inFlight = new AbortController();
+        const thisRequest = inFlight;
+        setSearching(true);
+        if (!isOpen() || suggestions.length === 0) {
+            suggestions = [];
+            render('Searching addresses...');
+        }
         try {
             const url = `${urls.autocomplete}?q=${encodeURIComponent(query)}&session=${encodeURIComponent(sessionToken)}`;
             const result = await getJson(url, inFlight.signal);
             cache.set(query, result);
             if (line1.value.trim() !== query || document.activeElement !== line1) return; // stale response
             suggestions = result;
-            render();
+            render(result.length ? '' : 'No matching U.S. addresses yet. Keep typing.');
         } catch (err) {
             if (err.name === 'AbortError') return;
             suggestions = [];
             if (document.activeElement === line1) render('Address suggestions are unavailable. You can keep typing.');
+        } finally {
+            if (inFlight === thisRequest) setSearching(false);
         }
+    }
+
+    const acWrap = line1.closest('.ac-wrap');
+    function setSearching(on) {
+        acWrap.classList.toggle('searching', on);
+        line1.setAttribute('aria-busy', on ? 'true' : 'false');
     }
 
     const debouncedFetch = App.debounce(fetchSuggestions, 250);
@@ -234,7 +257,8 @@
         if (!s) return;
         closeList();
         line1.value = s.mainText;
-        setStatus('loading', 'Loading address...');
+        setStatus('loading', 'Getting full address from Google...');
+        setBusy(true);
         try {
             const url = `${urls.place}/${encodeURIComponent(s.placeId)}?session=${encodeURIComponent(sessionToken)}`;
             const address = fromServer(await getJson(url));
@@ -248,6 +272,8 @@
             field('AddressLine2').focus();
         } catch {
             setStatus('warning', 'Could not load that address. Please complete the fields below.');
+        } finally {
+            setBusy(false);
         }
         suggestions = [];
     }
@@ -289,6 +315,7 @@
 
     /** Shows the dialog and resolves with 'suggested' | 'entered' | 'edit'. */
     function showDialog({ result, entered, mode }) {
+        setBusy(false);
         const suggested = result.suggested ? fromServer(result.suggested) : null;
         const hasSuggestion = suggested && fingerprint(suggested) !== fingerprint(entered);
         const isSuggested = result.verdict === 'suggested';
@@ -372,6 +399,7 @@
         verifyButton.disabled = true;
         const entered = readAddress();
         setStatus('loading', 'Verifying address with Google...');
+        setBusy(true);
 
         try {
             let result;
@@ -413,6 +441,7 @@
             }
             return 'save';
         } finally {
+            setBusy(false);
             reviewing = false;
             verifyButton.disabled = false;
         }

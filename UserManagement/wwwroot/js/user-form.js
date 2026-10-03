@@ -322,7 +322,7 @@
         if (window.AddressReview && window.AddressReview.needsReview()) {
             e.preventDefault();
             checkingAddress = true;
-            setSaving(true, 'Checking address...');
+            setSaving(true, 'Verifying address...');
             let outcome;
             try {
                 outcome = await window.AddressReview.review('save');

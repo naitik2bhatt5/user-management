@@ -1,5 +1,6 @@
 @model User
 @inject Microsoft.Extensions.Options.IOptions<UserManagement.Services.GoogleMapsOptions> GoogleMaps
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @{
     var addressApi = GoogleMaps.Value.Enabled;
     var isEdit = Model.UserId > 0;
@@ -51,6 +52,17 @@
 
     <fieldset>
         <legend>Address</legend>
+        @if (addressApi)
+        {
+            <p class="google-on">Address suggestions and verification by Google are <strong>on</strong>. Start typing in Address Line 1.</p>
+        }
+        else if (Env.IsDevelopment())
+        {
+            @* Only developers see this; reviewers running without a key just get the plain form. *@
+            <p class="google-off">Google address suggestions are <strong>off</strong>: no API key found.
+                In Visual Studio, right-click the project, choose <em>Manage User Secrets</em>, add
+                <code>{ "GoogleMaps": { "ApiKey": "AIza..." } }</code>, then restart the app.</p>
+        }
         <div class="address-toolbar">
             <span id="addressStatus" class="address-status" role="status" aria-live="polite" hidden></span>
             <button type="button" id="verifyAddress" class="btn btn-small" hidden>Verify address</button>

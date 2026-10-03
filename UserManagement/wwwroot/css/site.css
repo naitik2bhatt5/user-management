@@ -95,3 +95,25 @@ body.modal-open { overflow: hidden; }
 .option-address { display: block; line-height: 1.45; }
 .option-address mark { background: #ffe58a; padding: 0 2px; border-radius: 2px; }
 .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- "Google is working" indicators ---------- */
+.google-on, .google-off { margin: 0 0 8px; padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+.google-on { background: #eef6ff; color: #1d4f91; }
+.google-off { background: #fff4e5; color: #8a5300; }
+.google-off code { font-size: 12px; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+/* Spinner inside Address Line 1 while suggestions load */
+.ac-wrap.searching::after { content: ""; position: absolute; right: 10px; top: 9px; width: 14px; height: 14px;
+                            border: 2px solid #c5d3e8; border-top-color: #2b6cb0; border-radius: 50%; animation: spin .7s linear infinite; }
+.ac-wrap.searching input { padding-right: 32px; }
+
+/* Status pill gets a spinner while loading */
+.status-loading { background: #eef6ff; color: #1d4f91; font-weight: 600; }
+.status-loading::before { content: ""; display: inline-block; width: 11px; height: 11px; margin-right: 6px; vertical-align: -1px;
+                          border: 2px solid #c5d3e8; border-top-color: #2b6cb0; border-radius: 50%; animation: spin .7s linear infinite; }
+
+/* Whole address section pulses blue while Google verifies it */
+fieldset.address-busy { border-color: #2b6cb0; animation: busy-pulse 1.2s ease-in-out infinite; }
+fieldset.address-busy input, fieldset.address-busy select { background: #f5f9ff; }
+@keyframes busy-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(43,108,176,.35); } 50% { box-shadow: 0 0 0 4px rgba(43,108,176,.15); } }
