@@ -3,24 +3,23 @@
 A single-screen user manager: list users, add, edit, delete one, and delete many with checkboxes.
 Data access is plain ADO.NET (`Microsoft.Data.SqlClient`) with inline, **parameterized** SQL. No Entity Framework.
 
-## Run it
+## Run it (Visual Studio only, no SQL Server Management Studio needed)
 
-1. **Prerequisites:** .NET 8 SDK and any SQL Server (LocalDB, Express, Developer, or Docker).
-2. **Create the database:** run `database/CreateDatabase.sql` in SSMS / Azure Data Studio, or:
-   ```
-   sqlcmd -S localhost -E -i database/CreateDatabase.sql
-   ```
-   It creates the `UserManagement` database, the `States` lookup (50 states + DC), the `Users` table and five sample users. It is safe to run again.
-3. **Set the connection string** in `UserManagement/appsettings.json` (`ConnectionStrings:UserManagement`). Examples:
-   - Windows auth: `Server=localhost;Database=UserManagement;Trusted_Connection=True;TrustServerCertificate=True;`
-   - LocalDB: `Server=(localdb)\\MSSQLLocalDB;Database=UserManagement;Trusted_Connection=True;`
-   - SQL login / Docker: `Server=localhost,1433;Database=UserManagement;User Id=sa;Password=...;TrustServerCertificate=True;`
-4. **Start the app:**
-   ```
-   cd UserManagement
-   dotnet run
-   ```
-   Open http://localhost:5180 (or open the folder in Visual Studio and press F5).
+1. **Prerequisites:** Visual Studio 2022 with the **ASP.NET and web development** workload. That workload includes .NET 8 and **SQL Server Express LocalDB**. If LocalDB is missing, open Visual Studio Installer → Modify → Individual components → tick *SQL Server Express LocalDB*.
+2. Open `UserManagement/UserManagement.csproj` in Visual Studio and press **F5**.
+
+That's it. On startup the app runs `database/CreateDatabase.sql` against LocalDB, which creates the `UserManagement` database, the `States` lookup (50 states + DC), the `Users` table and five sample users. The script is re-runnable, so every later start just confirms the database is there (`Data/DatabaseInitializer.cs`).
+
+To look at the data inside Visual Studio: **View → SQL Server Object Explorer** → `(localdb)\MSSQLLocalDB` → Databases → UserManagement → Tables → right-click `dbo.Users` → *View Data*.
+
+### Using a full SQL Server instead
+Change `ConnectionStrings:UserManagement` in `UserManagement/appsettings.json`, for example:
+- SQL Express: `Server=localhost\\SQLEXPRESS;Database=UserManagement;Trusted_Connection=True;TrustServerCertificate=True;`
+- SQL login / Docker: `Server=localhost,1433;Database=UserManagement;User Id=sa;Password=...;TrustServerCertificate=True;`
+
+The database is still created automatically. If you prefer to run the script yourself, set `"Database": { "AutoCreate": false }` and run `sqlcmd -S <server> -E -i database/CreateDatabase.sql`.
+
+From the command line instead of Visual Studio: `cd UserManagement` then `dotnet run`, and open http://localhost:5180.
 
 ## Project layout
 
@@ -28,6 +27,7 @@ Data access is plain ADO.NET (`Microsoft.Data.SqlClient`) with inline, **paramet
 database/CreateDatabase.sql        tables, constraints, state seed, sample rows
 UserManagement/
   Program.cs                       DI + MVC routing (default: Users/Index)
+  Data/DatabaseInitializer.cs      runs CreateDatabase.sql at startup (creates DB, tables, seed data)
   Data/SqlConnectionFactory.cs     opens SqlConnection from appsettings
   Data/UserRepository.cs           all user SQL: select, insert (OUTPUT INSERTED.UserId), update, delete, bulk delete
   Data/StateRepository.cs          state dropdown + existence check

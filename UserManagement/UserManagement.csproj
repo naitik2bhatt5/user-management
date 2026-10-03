@@ -11,4 +11,9 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The setup script is copied next to the app so it can create the database on startup. -->
+    <None Include="..\database\CreateDatabase.sql" Link="Database\CreateDatabase.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

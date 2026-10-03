@@ -11,6 +11,9 @@ builder.Services.AddScoped<IStateRepository, StateRepository>();
 
 var app = builder.Build();
 
+// Creates the database, tables and seed data on first run (needs only LocalDB, which ships with Visual Studio).
+await DatabaseInitializer.InitializeAsync(app.Configuration, app.Logger);
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
