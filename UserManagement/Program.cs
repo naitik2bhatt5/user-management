@@ -1,4 +1,5 @@
 using UserManagement.Data;
+using UserManagement.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,10 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IStateRepository, StateRepository>();
+
+// Google address autocomplete + validation (optional: off when GoogleMaps:ApiKey is empty).
+builder.Services.Configure<GoogleMapsOptions>(builder.Configuration.GetSection("GoogleMaps"));
+builder.Services.AddHttpClient<GoogleAddressService>(c => c.Timeout = TimeSpan.FromSeconds(8));
 
 var app = builder.Build();
 

@@ -21,6 +21,34 @@ The database is still created automatically. If you prefer to run the script you
 
 From the command line instead of Visual Studio: `cd UserManagement` then `dotnet run`, and open http://localhost:5180.
 
+## Google address autocomplete and validation (optional)
+
+When a Google API key is configured, the Add/Edit form behaves like Amazon or Walmart checkout:
+
+- **Autocomplete:** typing in Address Line 1 shows matching U.S. street addresses with the typed part in bold. Pick one with the mouse, or with the arrow keys and Enter. The street, city, state, Zip and Zip+4 are filled in and briefly highlighted, then focus jumps to Address Line 2 for an apartment or suite.
+- **Review your address:** on save, the address is checked with the Google Address Validation API (USPS CASS data).
+  - Known address: saves straight away with a green "Verified address" badge.
+  - Google corrected or completed something, for example a missing Zip+4: a dialog shows **Suggested address** next to **Address as entered**, with the changes highlighted.
+  - Unknown address, or a building that needs a unit number: a dialog explains what could not be confirmed. The user can edit the address or save it as entered.
+  - If Google is unreachable, saving is never blocked.
+- **Verify address** button: checks the address at any time without saving.
+- An existing user's saved address is not re-checked unless it is edited.
+
+The API key stays on the server. The browser only calls `/Address/Autocomplete`, `/Address/Place/{id}` and `/Address/Validate` (`Controllers/AddressController.cs`), and those proxy to Google (`Services/GoogleAddressService.cs`). Without a key, these endpoints return 404 and the form works exactly as before.
+
+### Getting a key
+1. Go to https://console.cloud.google.com/, create a project and turn on billing. Google gives a free monthly credit.
+2. Under **APIs & Services → Library**, enable **Places API (New)** and **Address Validation API**.
+3. Under **APIs & Services → Credentials**, choose **Create credentials → API key**. Under *API restrictions*, limit the key to those two APIs. Because the key is only used from the server, don't add a website restriction.
+4. Give the key to the app. Either:
+   - In Visual Studio, right-click the project, choose **Manage User Secrets**, and paste:
+     ```json
+     { "GoogleMaps": { "ApiKey": "YOUR_KEY" } }
+     ```
+     This keeps the key out of Git.
+   - Or put it in `appsettings.json` under `"GoogleMaps": { "ApiKey": "..." }`. Don't commit that file with the key.
+5. Restart the app. The address field placeholder changes to "Start typing your street address".
+
 ## Project layout
 
 ```
@@ -33,11 +61,14 @@ UserManagement/
   Data/StateRepository.cs          state dropdown + existence check
   Models/User.cs                   fields, validation attributes, server-side business rules, normalization
   Controllers/UsersController.cs   Index, Create, Edit (form posts), Delete + DeleteMultiple (AJAX/JSON)
+  Controllers/AddressController.cs Google proxy endpoints (autocomplete, place details, validate)
+  Services/GoogleAddressService.cs calls Google and turns its verdict into verified / suggested / unverified
   Views/Users/Index.cshtml         the grid
   Views/Users/Form.cshtml          shared Add/Edit form
   wwwroot/js/site.js               fetch helper (antiforgery header, error handling), flash messages, debounce
   wwwroot/js/users-list.js         grid behaviour
   wwwroot/js/user-form.js          form behaviour
+  wwwroot/js/address-autocomplete.js  address suggestions dropdown + "Review your address" dialog
 ```
 
 ## How each requirement is met

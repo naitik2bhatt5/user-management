@@ -293,8 +293,15 @@
 
     // ---------- Submit ----------
 
-    form.addEventListener('submit', e => {
-        if (submitting) { // double-click / double Enter
+    let checkingAddress = false;
+
+    function setSaving(saving, label) {
+        saveButton.disabled = saving;
+        saveButton.textContent = saving ? label : saveButton.dataset.label;
+    }
+
+    form.addEventListener('submit', async e => {
+        if (submitting || checkingAddress) { // double-click / double Enter
             e.preventDefault();
             return;
         }
@@ -310,18 +317,51 @@
             return;
         }
 
+        // Optional Google address check (address-autocomplete.js). Runs only when the address changed
+        // since it was last verified, and never blocks saving if Google is unavailable.
+        if (window.AddressReview && window.AddressReview.needsReview()) {
+            e.preventDefault();
+            checkingAddress = true;
+            setSaving(true, 'Checking address...');
+            let outcome;
+            try {
+                outcome = await window.AddressReview.review('save');
+            } finally {
+                checkingAddress = false;
+            }
+            if (outcome !== 'save') {
+                setSaving(false);
+                return;
+            }
+            // A suggested address may have replaced the fields; make sure it still passes.
+            const after = validateAll();
+            renderSummary(after);
+            if (after.length) {
+                setSaving(false);
+                field(after[0].name).focus();
+                return;
+            }
+            submitting = true;
+            setSaving(true, 'Saving...');
+            form.submit(); // native submit does not re-run this handler
+            return;
+        }
+
         submitting = true;
-        saveButton.disabled = true;
-        saveButton.textContent = 'Saving...';
+        setSaving(true, 'Saving...');
     });
 
     // If the user navigates back to this page from the bfcache, re-enable the form.
     window.addEventListener('pageshow', ev => {
         if (ev.persisted) {
             submitting = false;
-            saveButton.disabled = false;
-            saveButton.textContent = saveButton.dataset.label;
+            setSaving(false);
             initialState = serialize();
         }
     });
+
+    // Used by address-autocomplete.js to re-check fields it fills in.
+    window.UserForm = {
+        validateField: name => { touched.add(name); return validateField(name); }
+    };
 })();

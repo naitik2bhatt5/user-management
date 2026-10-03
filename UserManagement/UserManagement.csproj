@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>UserManagement</RootNamespace>
+    <UserSecretsId>user-management-7c1e2f4a</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
