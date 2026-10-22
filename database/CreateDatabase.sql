@@ -82,3 +82,27 @@ BEGIN
         (N'Robert',N'Lee',     '1965-09-14', '3125550111', N'233 S Wacker Dr',   N'Floor 12',   N'Chicago',     'IL', '60606', '6306');
 END
 GO
+
+/* ---------- Location / address API providers (master config) ---------- */
+IF OBJECT_ID(N'dbo.GeoProviders', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.GeoProviders
+    (
+        ProviderId   INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_GeoProviders PRIMARY KEY,
+        ProviderType VARCHAR(20)    NOT NULL,            -- 'Google' or 'AmazonLocation'
+        Name         NVARCHAR(100)  NOT NULL,            -- label shown in the admin screen
+        ApiKey       NVARCHAR(1000) NOT NULL,            -- encrypted by the app (ASP.NET Data Protection)
+        Region       VARCHAR(30)    NULL,                -- AWS region, e.g. us-east-1 (Amazon Location only)
+        IsActive     BIT            NOT NULL CONSTRAINT DF_GeoProviders_IsActive DEFAULT 0,
+        CreatedAt    DATETIME2(0)   NOT NULL CONSTRAINT DF_GeoProviders_CreatedAt DEFAULT SYSUTCDATETIME(),
+        UpdatedAt    DATETIME2(0)   NULL,
+
+        CONSTRAINT CK_GeoProviders_Type CHECK (ProviderType IN ('Google', 'AmazonLocation'))
+    );
+END
+GO
+
+/* At most one provider can be active at a time. */
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_GeoProviders_Active' AND object_id = OBJECT_ID(N'dbo.GeoProviders'))
+    CREATE UNIQUE INDEX UX_GeoProviders_Active ON dbo.GeoProviders (IsActive) WHERE IsActive = 1;
+GO

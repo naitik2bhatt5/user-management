@@ -1,8 +1,10 @@
 @model User
-@inject Microsoft.Extensions.Options.IOptions<UserManagement.Services.GoogleMapsOptions> GoogleMaps
+@inject UserManagement.Services.IAddressProviderResolver AddressProviders
 @inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
 @{
-    var addressApi = GoogleMaps.Value.Enabled;
+    var addressProvider = await AddressProviders.GetActiveAsync();
+    var addressApi = addressProvider is not null;
+    var providerName = addressProvider?.Name ?? "";
     var isEdit = Model.UserId > 0;
     ViewData["Title"] = isEdit ? "Edit User" : "Add User";
 }
@@ -14,6 +16,7 @@
 
 <form id="userForm" method="post" asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@(isEdit ? Model.UserId.ToString() : null)" novalidate
       data-address-api="@(addressApi ? "true" : "false")"
+      data-address-provider="@providerName"
       data-address-on-file="@(isEdit && Context.Request.Method == "GET" ? "true" : "false")"
       data-autocomplete-url="@Url.Action("Autocomplete", "Address")"
       data-place-url="@Url.Content("~/Address/Place")"
@@ -54,14 +57,13 @@
         <legend>Address</legend>
         @if (addressApi)
         {
-            <p class="google-on">Address suggestions and verification by Google are <strong>on</strong>. Start typing in Address Line 1.</p>
+            <p class="google-on">Address suggestions and verification by @providerName are <strong>on</strong>. Start typing in Address Line 1.</p>
         }
         else if (Env.IsDevelopment())
         {
             @* Only developers see this; reviewers running without a key just get the plain form. *@
-            <p class="google-off">Google address suggestions are <strong>off</strong>: no API key found.
-                In Visual Studio, right-click the project, choose <em>Manage User Secrets</em>, add
-                <code>{ "GoogleMaps": { "ApiKey": "AIza..." } }</code>, then restart the app.</p>
+            <p class="google-off">Address suggestions are <strong>off</strong>: no active provider.
+                Add an API key and activate it on the <a asp-controller="Providers" asp-action="Index">Address providers</a> page.</p>
         }
         <div class="address-toolbar">
             <span id="addressStatus" class="address-status" role="status" aria-live="polite" hidden></span>

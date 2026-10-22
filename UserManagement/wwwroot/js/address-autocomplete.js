@@ -1,5 +1,5 @@
-// Google-powered address autocomplete (Amazon / Walmart style) and a "Review your address" dialog.
-// All Google calls go through /Address/* on our server, so the API key never reaches the browser.
+// Address autocomplete (Amazon / Walmart style) and a "Review your address" dialog, powered by the active provider (Google, Amazon Location, ...).
+// All provider calls go through /Address/* on our server, so the API key never reaches the browser.
 // The page works exactly as before when the feature is off (no API key configured).
 (function () {
     'use strict';
@@ -13,6 +13,7 @@
         place: form.dataset.placeUrl,
         validate: form.dataset.validateUrl
     };
+    const providerName = form.dataset.addressProvider || 'the address service';
     const field = name => form.elements.namedItem(name);
     const FIELDS = ['AddressLine1', 'AddressLine2', 'City', 'StateCode', 'Zip5', 'Zip4'];
     const line1 = field('AddressLine1');
@@ -158,7 +159,7 @@
             list.appendChild(li);
         });
         if (suggestions.length || message) {
-            list.insertAdjacentHTML('beforeend', '<li class="ac-footer" role="presentation">powered by <b>Google</b></li>');
+            list.insertAdjacentHTML('beforeend', '<li class="ac-footer" role="presentation">powered by <b>' + providerName + '</b></li>');
             openList();
         } else {
             closeList();
@@ -257,7 +258,7 @@
         if (!s) return;
         closeList();
         line1.value = s.mainText;
-        setStatus('loading', 'Getting full address from Google...');
+        setStatus('loading', 'Getting full address from ' + providerName + '...');
         setBusy(true);
         try {
             const url = `${urls.place}/${encodeURIComponent(s.placeId)}?session=${encodeURIComponent(sessionToken)}`;
@@ -267,7 +268,7 @@
             if (!address.AddressLine2) address.AddressLine2 = field('AddressLine2').value.trim();
             if (!address.AddressLine1) address.AddressLine1 = s.mainText;
             applyAddress(address);
-            setStatus('selected', 'Address filled in from Google. Add an apartment or suite if needed.');
+            setStatus('selected', 'Address filled in from ' + providerName + '. Add an apartment or suite if needed.');
             // Like Amazon: jump to the apartment/suite field after picking a street address.
             field('AddressLine2').focus();
         } catch {
@@ -324,8 +325,8 @@
         dialog.querySelector('#addressDialogIntro').textContent = isSuggested
             ? 'We found a match with a few changes. Please choose the address to use.'
             : hasSuggestion
-                ? 'Google could not fully confirm this address. Check it, pick the closest match, or keep what you entered.'
-                : 'Google could not confirm this is a known address. Check it, or keep what you entered.';
+                ? providerName + ' could not fully confirm this address. Check it, pick the closest match, or keep what you entered.'
+                : providerName + ' could not confirm this is a known address. Check it, or keep what you entered.';
 
         const issues = dialog.querySelector('.modal-issues');
         issues.innerHTML = (result.issues || []).map(i => `<li>${App.escapeHtml(i)}</li>`).join('');
@@ -398,7 +399,7 @@
         reviewing = true;
         verifyButton.disabled = true;
         const entered = readAddress();
-        setStatus('loading', 'Verifying address with Google...');
+        setStatus('loading', 'Verifying address with ' + providerName + '...');
         setBusy(true);
 
         try {
@@ -437,7 +438,7 @@
                 setStatus('verified', 'Verified address');
             } else {
                 confirmedFingerprint = fingerprint();
-                setStatus('confirmed', 'Kept as entered (not verified by Google)');
+                setStatus('confirmed', 'Kept as entered (not verified by ' + providerName + ')');
             }
             return 'save';
         } finally {

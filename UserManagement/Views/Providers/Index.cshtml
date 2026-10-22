@@ -1,0 +1,69 @@
+@model IReadOnlyList<UserManagement.Models.GeoProvider>
+@using UserManagement.Models
+@{
+    ViewData["Title"] = "Address providers";
+    var active = ViewBag.Active as UserManagement.Services.IAddressProvider;
+}
+
+<h1>Address providers</h1>
+<p class="muted">
+    Manage the location / address APIs used for address suggestions and verification. Only one provider is active at a time;
+    activating one switches the User form to it immediately.
+</p>
+
+@if (active is null)
+{
+    <p class="google-off">Address suggestions are <strong>off</strong>: no provider is active. The User form works as a plain form.</p>
+}
+else
+{
+    <p class="google-on">Active provider: <strong>@active.Name</strong></p>
+}
+
+<div class="toolbar">
+    <a class="btn btn-primary" asp-action="Create">+ Add provider</a>
+</div>
+
+<table class="grid">
+    <thead>
+        <tr><th>Name</th><th>Provider</th><th>API key</th><th>Region</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+    @foreach (var p in Model)
+    {
+        <tr>
+            <td>@p.Name</td>
+            <td>@p.TypeDisplay</td>
+            <td class="nowrap"><code>@p.ApiKeyMasked</code></td>
+            <td>@(p.Region ?? "-")</td>
+            <td>
+                @if (p.IsActive) { <span class="badge badge-on">Active</span> }
+                else { <span class="badge">Inactive</span> }
+            </td>
+            <td class="nowrap">
+                <form method="post" class="inline-form">
+                    @Html.AntiForgeryToken()
+                    @if (p.IsActive)
+                    {
+                        <button type="submit" class="btn btn-small" asp-action="Deactivate" asp-route-id="@p.ProviderId">Deactivate</button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-small btn-primary" asp-action="Activate" asp-route-id="@p.ProviderId">Activate</button>
+                    }
+                    <button type="submit" class="btn btn-small" asp-action="Test" asp-route-id="@p.ProviderId">Test</button>
+                    <a class="btn btn-small" asp-action="Edit" asp-route-id="@p.ProviderId">Edit</a>
+                    <button type="submit" class="btn btn-small btn-danger" asp-action="Delete" asp-route-id="@p.ProviderId"
+                            onclick="return confirm('Delete @p.Name? This removes its API key.');">Delete</button>
+                </form>
+            </td>
+        </tr>
+    }
+    @if (Model.Count == 0)
+    {
+        <tr><td colspan="6" class="empty">No providers saved yet. <a asp-action="Create">Add one.</a>
+            Until you do, the app uses the <code>GoogleMaps:ApiKey</code> setting, if present.</td></tr>
+    }
+    </tbody>
+</table>
+<p class="muted">API keys are stored encrypted and only shown masked. "Test" makes one real request with the saved key.</p>

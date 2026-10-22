@@ -9,10 +9,15 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<ISqlConnectionFactory, SqlConnectionFactory>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IStateRepository, StateRepository>();
+builder.Services.AddScoped<IGeoProviderRepository, GeoProviderRepository>();
 
-// Google address autocomplete + validation (optional: off when GoogleMaps:ApiKey is empty).
+// Address autocomplete + validation. The active provider (Google, Amazon Location, ...) is chosen on the
+// Providers screen (dbo.GeoProviders). Until a provider is saved there, the old GoogleMaps:ApiKey setting is used.
+builder.Services.AddDataProtection().SetApplicationName("UserManagement"); // encrypts API keys at rest
+builder.Services.AddMemoryCache();
 builder.Services.Configure<GoogleMapsOptions>(builder.Configuration.GetSection("GoogleMaps"));
-builder.Services.AddHttpClient<GoogleAddressService>(c => c.Timeout = TimeSpan.FromSeconds(8));
+builder.Services.AddHttpClient("address", c => c.Timeout = TimeSpan.FromSeconds(8));
+builder.Services.AddScoped<IAddressProviderResolver, AddressProviderResolver>();
 
 var app = builder.Build();
 

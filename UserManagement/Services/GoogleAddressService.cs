@@ -10,7 +10,7 @@ namespace UserManagement.Services;
 /// Thin server-side wrapper over Google Places Autocomplete (New), Place Details (New) and the
 /// Address Validation API. Calls are made from the server so the API key never reaches the browser.
 /// </summary>
-public class GoogleAddressService
+public class GoogleAddressService : IAddressProvider
 {
     private readonly HttpClient _http;
     private readonly GoogleMapsOptions _options;
@@ -23,7 +23,7 @@ public class GoogleAddressService
         _logger = logger;
     }
 
-    public bool Enabled => _options.Enabled;
+    public string Name => "Google";
 
     // ---------------- Autocomplete ----------------
 
@@ -253,7 +253,7 @@ public class GoogleAddressService
         return null;
     }
 
-    private static bool SameAddress(AddressDto a, AddressDto b)
+    internal static bool SameAddress(AddressDto a, AddressDto b)
     {
         static string N(string? s) => Regex.Replace((s ?? "").Trim().ToUpperInvariant(), @"[\s.,#]+", " ").Trim();
         return N(a.AddressLine1) == N(b.AddressLine1)
@@ -278,7 +278,7 @@ public class GoogleAddressService
         _ => type.Replace('_', ' ')
     };
 
-    private static (string? zip5, string? zip4) SplitZip(string postal)
+    internal static (string? zip5, string? zip4) SplitZip(string postal)
     {
         var m = Regex.Match(postal ?? "", @"^(\d{5})(?:-?(\d{4}))?$");
         return m.Success ? (m.Groups[1].Value, m.Groups[2].Success ? m.Groups[2].Value : null) : (null, null);

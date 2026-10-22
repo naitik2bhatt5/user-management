@@ -1,0 +1,74 @@
+@model UserManagement.Models.GeoProvider
+@using UserManagement.Models
+@{
+    var isEdit = Model.ProviderId > 0;
+    ViewData["Title"] = isEdit ? "Edit provider" : "Add provider";
+    var action = isEdit ? "Edit" : "Create";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<form method="post" asp-action="@action" asp-route-id="@(isEdit ? Model.ProviderId.ToString() : null)" autocomplete="off" novalidate>
+    <fieldset>
+        <legend>Provider</legend>
+        <div class="row">
+            <div class="field">
+                <label asp-for="ProviderType">Provider <span class="req">*</span></label>
+                <select asp-for="ProviderType" id="providerType">
+                    @foreach (var t in GeoProviderTypes.All)
+                    {
+                        <option value="@t" selected="@(Model.ProviderType == t)">@GeoProviderTypes.Display(t)</option>
+                    }
+                </select>
+                <span asp-validation-for="ProviderType" class="field-error"></span>
+            </div>
+            <div class="field">
+                <label asp-for="Name">Name <span class="req">*</span></label>
+                <input asp-for="Name" maxlength="100" placeholder="e.g. Google - production" />
+                <span asp-validation-for="Name" class="field-error"></span>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="field">
+                <label asp-for="ApiKey">API key @if (!isEdit) { <span class="req">*</span> }</label>
+                <input asp-for="ApiKey" type="password" autocomplete="new-password" spellcheck="false"
+                       placeholder="@(isEdit ? "Leave blank to keep the current key" : "Paste the API key")" />
+                @if (isEdit && !string.IsNullOrEmpty(Model.ApiKeyMasked))
+                {
+                    <span class="muted">Current key: <code>@Model.ApiKeyMasked</code></span>
+                }
+                <span asp-validation-for="ApiKey" class="field-error"></span>
+            </div>
+            <div class="field" id="regionField">
+                <label asp-for="Region">AWS region <span class="req">*</span></label>
+                <input asp-for="Region" maxlength="30" placeholder="us-east-1" />
+                <span class="muted">Must be the region where the API key was created.</span>
+                <span asp-validation-for="Region" class="field-error"></span>
+            </div>
+        </div>
+
+        <label class="check">
+            <input type="checkbox" name="IsActive" value="true" @(Model.IsActive ? "checked" : "") />
+            Make this the active provider (turns every other provider off)
+        </label>
+    </fieldset>
+
+    <div class="actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn" asp-action="Index">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        // The region only applies to Amazon Location.
+        (function () {
+            var type = document.getElementById('providerType');
+            var region = document.getElementById('regionField');
+            function sync() { region.hidden = type.value !== 'AmazonLocation'; }
+            type.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
+}
