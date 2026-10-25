@@ -61,13 +61,25 @@ public class AmazonLocationAddressService : IAddressProvider
             var title = Str(item, "Title");
             var number = Str(address, "AddressNumber");
             var street = Str(address, "Street");
-            var main = number.Length > 0 && street.Length > 0 ? $"{number} {street}" : title.Split(',')[0].Trim();
+            // The full one-line address ("350 5th Ave, New York, NY 10118, United States"); Title can be shorter or odd.
+            var label = Str(address, "Label");
+            if (label.Length == 0) label = title;
+            var parts = label.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToList();
+            if (parts.Count > 1 && parts[^1].Equals("United States", StringComparison.OrdinalIgnoreCase)) parts.RemoveAt(parts.Count - 1);
 
-            var secondary = string.Join(", ", new[]
+            var main = number.Length > 0 && street.Length > 0 ? $"{number} {street}" : (parts.FirstOrDefault() ?? title);
+            // Everything after the street part, e.g. "New York, NY 10118".
+            var secondary = string.Join(", ", parts.Skip(1));
+            if (secondary.Length == 0)
             {
-                Str(address, "Locality"),
-                $"{StateCode(Obj(address, "Region"))} {Str(address, "PostalCode")}".Trim()
-            }.Where(s => s.Length > 0));
+                secondary = string.Join(", ", new[]
+                {
+                    Str(address, "Locality"),
+                    $"{StateCode(Obj(address, "Region"))} {Str(address, "PostalCode")}".Trim()
+                }.Where(s => s.Length > 0));
+            }
+
+            if (number.Length == 0 && parts.Count < 2) continue; // a bare "United States" is not an address
 
             // Highlights are offsets into Title; they only line up if our main text is the start of the title.
             var matches = new List<TextMatch>();
