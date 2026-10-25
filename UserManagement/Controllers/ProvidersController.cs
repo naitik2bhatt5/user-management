@@ -7,9 +7,9 @@ namespace UserManagement.Controllers;
 
 /// <summary>
 /// Master config for location / address APIs: add keys, switch the active provider, turn one off.
-/// NOTE: the app has no sign-in yet, so anyone who can open the site can open this screen.
-/// Put it behind authorization before exposing the app beyond a trusted network.
+/// Requires the admin sign-in (AccountController); every action here is protected.
 /// </summary>
+[Microsoft.AspNetCore.Authorization.Authorize]
 public class ProvidersController : Controller
 {
     private readonly IGeoProviderRepository _providers;

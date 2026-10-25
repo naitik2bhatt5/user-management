@@ -78,7 +78,7 @@ You should get JSON with `ResultItems`.
 - **Storage terms:** this app saves the chosen address in its own database. AWS has separate terms and
   pricing for storing Places results ("intended use: storage"). Confirm with AWS pricing and terms that your
   usage fits before going to production.
-- **Sign-in:** the Address providers page has no login yet. Restrict it before exposing the app publicly.
+- **Sign-in:** the Address providers page needs the admin sign-in; see PRODUCTION-CHECKLIST.md for setting the password.
 
 ## Differences from Google in this app
 

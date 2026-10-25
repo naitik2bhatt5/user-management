@@ -10,6 +10,13 @@
     <header class="site-header">
         <a asp-controller="Users" asp-action="Index">User Management</a>
         <a asp-controller="Providers" asp-action="Index" class="header-link">Address providers</a>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form header-right">
+                <span class="header-user">@User.Identity.Name</span>
+                <button type="submit" class="btn btn-small">Sign out</button>
+            </form>
+        }
     </header>
     <main class="container">
         @* Flash messages from TempData; site.js also writes AJAX results here. *@

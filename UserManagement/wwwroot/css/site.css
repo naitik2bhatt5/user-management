@@ -125,3 +125,6 @@ fieldset.address-busy input, fieldset.address-busy select { background: #f5f9ff;
 .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #e5e7eb; color: #444; font-size: 12px; }
 .badge-on { background: #d9f2e0; color: #1a6b34; font-weight: 600; }
 .check { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.site-header { display: flex; align-items: center; }
+.header-right { margin-left: auto; color: #fff; }
+.header-user { margin-right: 8px; opacity: .85; }

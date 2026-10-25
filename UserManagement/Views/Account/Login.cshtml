@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Sign in";
+    bool configured = ViewBag.Configured == true;
+}
+
+<h1>Admin sign in</h1>
+<p class="muted">The Address providers page holds API keys, so it needs an admin sign-in.</p>
+
+@if (!configured)
+{
+    <p class="google-off">
+        No admin password is set, so nobody can sign in yet. On the server, run in the project folder:<br />
+        <code>dotnet user-secrets set "Admin:Password" "your long passphrase"</code><br />
+        (or set the environment variable <code>Admin__Password</code>), then restart the app.
+    </p>
+}
+@if (ViewBag.Error is string error)
+{
+    <div class="alert alert-error" role="alert">@error</div>
+}
+
+<form method="post" asp-action="Login" autocomplete="off">
+    <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+    <fieldset>
+        <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" maxlength="100" autocomplete="username" autofocus />
+        </div>
+        <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" maxlength="200" autocomplete="current-password" />
+        </div>
+    </fieldset>
+    <div class="actions">
+        <button type="submit" class="btn btn-primary" @(configured ? "" : "disabled")>Sign in</button>
+    </div>
+</form>

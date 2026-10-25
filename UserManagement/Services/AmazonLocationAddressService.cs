@@ -146,6 +146,8 @@ public class AmazonLocationAddressService : IAddressProvider
 
         var suggested = ToDto(Obj(top, "Address"));
         if (string.IsNullOrEmpty(suggested.AddressLine2)) suggested.AddressLine2 = entered.AddressLine2; // geocode drops units we typed
+        // Amazon rarely returns Zip+4; keep the one the user has when the 5-digit ZIP agrees.
+        if (string.IsNullOrEmpty(suggested.Zip4) && suggested.Zip5 == entered.Zip5) suggested.Zip4 = entered.Zip4;
 
         // Overall match score is 0..1; a missing score is treated as a decent (not perfect) match.
         var scores = Obj(top, "MatchScores");
