@@ -67,6 +67,7 @@ You should get JSON with `ResultItems`.
 |---|---|
 | **Test** says `returned 403` | Key expired, wrong region, or the Places action is not allowed on the key |
 | **Test** says `returned 400` | Region or key is mistyped |
+| **Test** says `returned 401`, log shows "Invalid API key format" | Only part of the key was pasted. Use the copy button next to the key value in the console, then edit the row and paste again |
 | Key accepted, zero suggestions | Key lacks `geo-places:Autocomplete` |
 | Works in curl, fails in the app | Referer restriction on the key; remove it |
 | Row shows "(unreadable - re-enter key)" | Encryption keys of the web server changed; edit the row and paste the key again |
